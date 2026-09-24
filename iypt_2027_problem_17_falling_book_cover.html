@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IYPT 2027 Problem 17 - Falling Book Cover Simulation</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f9ff',
+              500: '#0284c7',
+              600: '#0369a1',
+              900: '#0c4a6e',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0b1329;
+      color: #f1f5f9;
+    }
+    .font-mono-code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
+    }
+    .card-panel {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(10px);
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 pb-12">
+
+  <header class="border-b border-slate-800 bg-slate-900/90 sticky top-0 z-50 backdrop-blur">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="h-9 w-9 rounded-lg bg-sky-600 flex items-center justify-center text-white shadow-md shadow-sky-600/30">
+          <i class="fa-solid fa-book text-base"></i>
+        </div>
+        <div>
+          <h1 class="text-base font-bold text-white tracking-tight flex items-center gap-2">
+            IYPT 2027 — Problem 17
+            <span class="text-[11px] px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 font-semibold">Falling Book Cover</span>
+          </h1>
+          <p class="text-xs text-slate-400">Numerical ODE Physics Simulation & PPT Presentation Tool</p>
+        </div>
+      </div>
+      <button id="btnHeaderExport" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2 rounded-lg font-semibold transition flex items-center space-x-2 shadow-lg shadow-sky-600/20">
+        <i class="fa-solid fa-file-csv"></i>
+        <span>Download CSV</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
+
+    <!-- Top Row: Input Parameters + Key Results Cards -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      
+      <!-- Input Controls Panel (5 cols) -->
+      <section class="lg:col-span-5 card-panel rounded-2xl p-5 shadow-xl">
+        <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-800">
+          <h2 class="text-sm font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-sliders text-sky-400"></i> Physical Parameters
+          </h2>
+          <button id="btnReset" class="text-xs text-slate-400 hover:text-sky-400 transition flex items-center gap-1">
+            <i class="fa-solid fa-rotate-left"></i> Defaults
+          </button>
+        </div>
+
+        <form id="simForm" class="space-y-3.5 text-xs">
+          <!-- Cover Length L -->
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label for="inputL" class="font-medium text-slate-300">Cover Length <span class="font-mono text-sky-400">L</span> (m)</label>
+              <span id="valL" class="font-mono text-sky-400 font-semibold">0.2065 m</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <input type="number" id="inputL" step="0.001" min="0.01" max="2.0" value="0.2065" class="w-24 bg-slate-900 border border-slate-700 text-slate-100 rounded-md p-1.5 font-mono focus:border-sky-500 focus:outline-none">
+              <input type="range" id="sliderL" min="0.05" max="0.5" step="0.005" value="0.2065" class="w-full accent-sky-500">
+            </div>
+          </div>
+
+          <!-- Initial Angle Theta 0 -->
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label for="inputTheta0" class="font-medium text-slate-300">Initial Angle <span class="font-mono text-amber-400">θ₀</span> (°)</label>
+              <span id="valTheta0" class="font-mono text-amber-400 font-semibold">64.0°</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <input type="number" id="inputTheta0" step="0.5" min="1" max="89" value="64.0" class="w-24 bg-slate-900 border border-slate-700 text-slate-100 rounded-md p-1.5 font-mono focus:border-amber-500 focus:outline-none">
+              <input type="range" id="sliderTheta0" min="5" max="85" step="1" value="64" class="w-full accent-amber-500">
+            </div>
+          </div>
+
+          <!-- Initial Velocity & Gravity & dt Grid -->
+          <div class="grid grid-cols-3 gap-2.5 pt-1">
+            <div>
+              <label for="inputOmega0" class="block font-medium text-slate-300 mb-1"><span class="font-mono text-emerald-400">ω₀</span> (rad/s)</label>
+              <input type="number" id="inputOmega0" step="0.1" value="0.0" class="w-full bg-slate-900 border border-slate-700 text-slate-100 rounded-md p-1.5 font-mono focus:border-emerald-500 focus:outline-none">
+            </div>
+            <div>
+              <label for="inputG" class="block font-medium text-slate-300 mb-1"><span class="font-mono text-rose-400">g</span> (m/s²)</label>
+              <input type="number" id="inputG" step="0.01" value="9.81" class="w-full bg-slate-900 border border-slate-700 text-slate-100 rounded-md p-1.5 font-mono focus:border-rose-500 focus:outline-none">
+            </div>
+            <div>
+              <label for="inputDt" class="block font-medium text-slate-300 mb-1"><span class="font-mono text-purple-400">dt</span> (s)</label>
+              <select id="inputDt" class="w-full bg-slate-900 border border-slate-700 text-slate-100 rounded-md p-1.5 font-mono focus:border-purple-500 focus:outline-none">
+                <option value="0.00005">0.00005</option>
+                <option value="0.0001" selected>0.0001</option>
+                <option value="0.0005">0.0005</option>
+                <option value="0.001">0.001</option>
+              </select>
+            </div>
+          </div>
+
+          <button id="btnRun" type="button" class="w-full mt-3 py-2.5 px-4 rounded-xl font-bold text-white bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 transition shadow-lg shadow-sky-500/25 flex items-center justify-center space-x-2">
+            <i class="fa-solid fa-play"></i>
+            <span>Run Numerical Simulation</span>
+          </button>
+        </form>
+      </section>
+
+      <!-- Key Results Summary Cards (7 cols) -->
+      <section class="lg:col-span-7 flex flex-col justify-between space-y-4">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          
+          <!-- Card 1: Total Fall Time -->
+          <div class="card-panel rounded-xl p-3.5 border-l-4 border-l-sky-500">
+            <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Fall Time (t_final)</p>
+            <p id="resTime" class="text-xl sm:text-2xl font-bold font-mono text-sky-400 mt-1">0.2384 s</p>
+            <p id="resTimeMs" class="text-[10px] font-mono text-slate-500 mt-0.5">238.4 ms</p>
+          </div>
+
+          <!-- Card 2: Impact Angular Velocity -->
+          <div class="card-panel rounded-xl p-3.5 border-l-4 border-l-emerald-500">
+            <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Impact Velocity (ω)</p>
+            <p id="resOmega" class="text-xl sm:text-2xl font-bold font-mono text-emerald-400 mt-1">-11.32</p>
+            <p class="text-[10px] font-mono text-slate-500 mt-0.5">rad/s</p>
+          </div>
+
+          <!-- Card 3: Impact Angular Acceleration -->
+          <div class="card-panel rounded-xl p-3.5 border-l-4 border-l-amber-500">
+            <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Impact Accel (α)</p>
+            <p id="resAlpha" class="text-xl sm:text-2xl font-bold font-mono text-amber-400 mt-1">-71.26</p>
+            <p class="text-[10px] font-mono text-slate-500 mt-0.5">rad/s² (Maximum)</p>
+          </div>
+
+          <!-- Card 4: Theoretical Exact Velocity -->
+          <div class="card-panel rounded-xl p-3.5 border-l-4 border-l-purple-500">
+            <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Theory ω_exact</p>
+            <p id="resTheoryOmega" class="text-xl sm:text-2xl font-bold font-mono text-purple-400 mt-1">-11.32</p>
+            <p class="text-[10px] font-mono text-slate-500 mt-0.5">Energy Conservation</p>
+          </div>
+
+        </div>
+
+        <!-- Formula Banner -->
+        <div class="card-panel rounded-xl p-4 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div class="space-y-1">
+            <span class="font-bold text-sky-400">Equation of Motion:</span>
+            <div class="font-mono text-slate-200">d²θ/dt² = -(3g / 2L) · cos(θ)</div>
+          </div>
+          <div class="text-slate-400 text-[11px] max-w-sm">
+            Integration method: <span class="text-slate-200 font-semibold">Semi-Implicit Euler-Cromer</span>.
+            Acceleration updates at each tiny timestep $\Delta t = 0.0001\text{ s}$.
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Interactive 2D Visual Canvas -->
+    <section class="card-panel rounded-2xl p-5 shadow-xl">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-800 gap-2">
+        <div>
+          <h2 class="text-sm font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-film text-sky-400"></i> Kinematic 2D Canvas Visualizer
+          </h2>
+          <p class="text-xs text-slate-400">Rigid cover rotating about hinge axis at pivot (x=0, y=0)</p>
+        </div>
+
+        <!-- Playback controls -->
+        <div class="flex items-center space-x-2 text-xs">
+          <button id="btnPlayPause" class="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-semibold transition flex items-center space-x-1.5">
+            <i class="fa-solid fa-play" id="iconPlay"></i>
+            <span id="textPlay">Play</span>
+          </button>
+          <button id="btnRestart" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition" title="Restart">
+            <i class="fa-solid fa-rotate-left"></i>
+          </button>
+          <div class="h-4 w-px bg-slate-800 mx-1"></div>
+          <span id="labelSpeed" class="font-mono text-slate-300 text-[11px]">1.0x</span>
+          <input type="range" id="sliderSpeed" min="0.2" max="2.0" step="0.1" value="1.0" class="w-16 accent-sky-500">
+        </div>
+      </div>
+
+      <!-- Canvas Area -->
+      <div class="relative mt-3 bg-slate-950 rounded-xl overflow-hidden border border-slate-800">
+        <canvas id="simCanvas" class="w-full h-[280px] block cursor-pointer"></canvas>
+        
+        <!-- Scrubber Overlay -->
+        <div class="absolute bottom-3 left-4 right-4 bg-slate-900/90 backdrop-blur p-2 rounded-xl border border-slate-800 flex items-center space-x-3 text-xs">
+          <span id="animTimeLabel" class="font-mono text-sky-400 w-16 text-right font-semibold">0.0000s</span>
+          <input type="range" id="animScrubber" min="0" max="100" value="0" step="1" class="w-full accent-sky-500">
+          <span id="animAngleLabel" class="font-mono text-amber-400 w-14 font-semibold">64.0°</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Responsive Chart Plots (2 Grid) -->
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      
+      <!-- Graph 1: Angle vs Time -->
+      <div class="card-panel rounded-2xl p-4 shadow-xl">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-chart-line"></i> Angle θ(t) [Degrees]
+          </h3>
+          <span class="text-[10px] font-mono text-slate-400">Impact at θ = 0°</span>
+        </div>
+        <div class="relative h-56 w-full">
+          <canvas id="chartTheta"></canvas>
+        </div>
+      </div>
+
+      <!-- Graph 2: Angular Velocity vs Time -->
+      <div class="card-panel rounded-2xl p-4 shadow-xl">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-chart-line"></i> Angular Velocity ω(t) [rad/s]
+          </h3>
+          <span class="text-[10px] font-mono text-slate-400">Monotonically Increasing Speed</span>
+        </div>
+        <div class="relative h-56 w-full">
+          <canvas id="chartOmega"></canvas>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Data Preview Table & CSV Download -->
+    <section class="card-panel rounded-2xl p-5 shadow-xl">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-800 gap-2">
+        <div>
+          <h2 class="text-sm font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-table text-sky-400"></i> Sampled Numerical Output
+          </h2>
+          <p class="text-xs text-slate-400">Showing sampled steps for UI performance. CSV download includes full $dt=0.0001\text{s}$ resolution.</p>
+        </div>
+        <button id="btnDownloadCSV" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-lg font-semibold transition flex items-center space-x-2 shadow-lg shadow-emerald-600/20">
+          <i class="fa-solid fa-download"></i>
+          <span>Download CSV File (Excel Ready)</span>
+        </button>
+      </div>
+
+      <!-- Table -->
+      <div class="mt-3 overflow-x-auto rounded-xl border border-slate-800">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="bg-slate-900 text-slate-300 font-mono border-b border-slate-800">
+              <th class="p-2.5">Time t (s)</th>
+              <th class="p-2.5">Angle θ (deg)</th>
+              <th class="p-2.5">Angle θ (rad)</th>
+              <th class="p-2.5">Velocity ω (rad/s)</th>
+              <th class="p-2.5">Accel α (rad/s²)</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody" class="divide-y divide-slate-800/60 font-mono text-slate-300">
+            <!-- Dynamic rows inserted via JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Explanation Card for IYPT PPT -->
+    <section class="card-panel rounded-2xl p-5 shadow-xl space-y-3 text-xs leading-relaxed">
+      <h2 class="text-sm font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-2">
+        <i class="fa-solid fa-lightbulb text-amber-400"></i> IYPT Physics & Presentation Breakdown
+      </h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-slate-300">
+        <div class="bg-slate-900/80 p-3.5 rounded-xl border border-slate-800 space-y-2">
+          <h3 class="font-semibold text-sky-400">1. Why Acceleration is Non-Constant</h3>
+          <p>
+            The gravity torque about the hinge is $\tau = -Mg \frac{L}{2} \cos(\theta)$. Since moment of inertia is $I = \frac{1}{3}ML^2$, angular acceleration is:
+          </p>
+          <div class="bg-slate-950 p-2 rounded text-center font-mono text-amber-300">
+            α(θ) = -(3g / 2L) · cos(θ)
+          </div>
+          <p>
+            Because $\theta$ decreases continuously during the fall, $\cos(\theta)$ increases from $\cos(64^\circ) \approx 0.438$ up to $\cos(0^\circ) = 1.0$. Thus $|\alpha|$ grows from $31.2\text{ rad/s}^2$ to $71.3\text{ rad/s}^2$. Constant acceleration formulas ($\theta = \theta_0 + \omega_0 t + \frac{1}{2}\alpha t^2$) are invalid!
+          </p>
+        </div>
+
+        <div class="bg-slate-900/80 p-3.5 rounded-xl border border-slate-800 space-y-2">
+          <h3 class="font-semibold text-sky-400">2. PPT & Physics Fight Workflow</h3>
+          <ul class="list-disc list-inside space-y-1 text-slate-300">
+            <li><strong>Step A:</strong> Click <em>Download CSV File</em>.</li>
+            <li><strong>Step B:</strong> Record video of a falling cover at 120/240 fps, track $\theta(t)$ in Tracker software.</li>
+            <li><strong>Step C:</strong> Import CSV data into Excel / Origin and overlay experimental points over this theoretical numerical curve.</li>
+            <li><strong>Step D:</strong> Discuss air drag and hinge friction discrepancies during your Reporter presentation.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // Global State
+    let simData = [];
+    let sampledData = [];
+    let chartTheta = null;
+    let chartOmega = null;
+
+    let isPlaying = false;
+    let animFrameId = null;
+    let currentAnimIndex = 0;
+    let animSpeed = 1.0;
+
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const DEFAULTS = {
+      L: 0.2065,
+      theta0: 64.0,
+      omega0: 0.0,
+      g: 9.81,
+      dt: 0.0001
+    };
+
+    const degToRad = deg => deg * Math.PI / 180.0;
+    const radToDeg = rad => rad * 180.0 / Math.PI;
+
+    // Acceleration formula
+    function calcAlpha(thetaRad, g, L) {
+      return -(3.0 * g / (2.0 * L)) * Math.cos(thetaRad);
+    }
+
+    function runSimulation() {
+      const L = parseFloat(document.getElementById('inputL').value) || DEFAULTS.L;
+      const theta0Deg = parseFloat(document.getElementById('inputTheta0').value) || DEFAULTS.theta0;
+      const omega0 = parseFloat(document.getElementById('inputOmega0').value) || 0;
+      const g = parseFloat(document.getElementById('inputG').value) || DEFAULTS.g;
+      const dt = parseFloat(document.getElementById('inputDt').value) || DEFAULTS.dt;
+
+      let theta = degToRad(theta0Deg);
+      let omega = omega0;
+      let t = 0.0;
+
+      simData = [];
+
+      // Initial state
+      let alpha = calcAlpha(theta, g, L);
+      simData.push({ t, thetaRad: theta, thetaDeg: radToDeg(theta), omega, alpha });
+
+      const maxSteps = 150000;
+      let steps = 0;
+
+      // Numerical Loop (Euler-Cromer)
+      while (theta > 0 && steps < maxSteps) {
+        steps++;
+
+        alpha = calcAlpha(theta, g, L);
+        const omegaNext = omega + alpha * dt;
+        const thetaNext = theta + omegaNext * dt;
+
+        if (thetaNext <= 0) {
+          // Exact impact interpolation
+          const frac = theta / (theta - thetaNext);
+          const exactDt = frac * dt;
+          const tImpact = t + exactDt;
+          const omegaImpact = omega + alpha * exactDt;
+          const alphaImpact = calcAlpha(0, g, L);
+
+          simData.push({
+            t: tImpact,
+            thetaRad: 0.0,
+            thetaDeg: 0.0,
+            omega: omegaImpact,
+            alpha: alphaImpact
+          });
+          break;
+        }
+
+        t += dt;
+        theta = thetaNext;
+        omega = omegaNext;
+        alpha = calcAlpha(theta, g, L);
+
+        simData.push({
+          t,
+          thetaRad: theta,
+          thetaDeg: radToDeg(theta),
+          omega,
+          alpha
+        });
+      }
+
+      // Sample data for rendering
+      sampleDataset(100);
+
+      // Update UI Metrics
+      updateMetrics(g, L, theta0Deg);
+
+      // Update Charts
+      updateCharts();
+
+      // Render Table
+      renderTable();
+
+      // Reset Animation
+      currentAnimIndex = 0;
+      updateScrubberUI();
+      drawCanvasFrame();
+    }
+
+    function sampleDataset(targetCount = 100) {
+      if (simData.length <= targetCount) {
+        sampledData = [...simData];
+        return;
+      }
+      sampledData = [];
+      const step = (simData.length - 1) / (targetCount - 1);
+      for (let i = 0; i < targetCount - 1; i++) {
+        sampledData.push(simData[Math.round(i * step)]);
+      }
+      sampledData.push(simData[simData.length - 1]);
+    }
+
+    function updateMetrics(g, L, theta0Deg) {
+      const impactPoint = simData[simData.length - 1];
+
+      document.getElementById('resTime').innerText = `${impactPoint.t.toFixed(4)} s`;
+      document.getElementById('resTimeMs').innerText = `${(impactPoint.t * 1000).toFixed(1)} ms`;
+
+      document.getElementById('resOmega').innerText = impactPoint.omega.toFixed(2);
+      document.getElementById('resAlpha').innerText = impactPoint.alpha.toFixed(2);
+
+      // Energy conservation exact value
+      const theta0Rad = degToRad(theta0Deg);
+      const theoryOmega = -Math.sqrt((3.0 * g / L) * Math.sin(theta0Rad));
+      document.getElementById('resTheoryOmega').innerText = theoryOmega.toFixed(2);
+    }
+
+    function updateCharts() {
+      const labels = sampledData.map(d => d.t.toFixed(4));
+      const thetaVals = sampledData.map(d => d.thetaDeg);
+      const omegaVals = sampledData.map(d => d.omega);
+
+      const baseOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            backgroundColor: '#0f172a',
+            borderColor: '#334155',
+            borderWidth: 1
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(255,255,255,0.05)' },
+            ticks: { color: '#94a3b8', font: { size: 10 } },
+            title: { display: true, text: 'Time t (s)', color: '#64748b', font: { size: 10 } }
+          },
+          y: {
+            grid: { color: 'rgba(255,255,255,0.05)' },
+            ticks: { color: '#94a3b8', font: { size: 10 } }
+          }
+        }
+      };
+
+      if (chartTheta) chartTheta.destroy();
+      chartTheta = new Chart(document.getElementById('chartTheta').getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Angle θ (°)',
+            data: thetaVals,
+            borderColor: '#f59e0b',
+            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+            fill: true,
+            borderWidth: 2,
+            pointRadius: 0
+          }]
+        },
+        options: baseOptions
+      });
+
+      if (chartOmega) chartOmega.destroy();
+      chartOmega = new Chart(document.getElementById('chartOmega').getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Velocity ω (rad/s)',
+            data: omegaVals,
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+            fill: true,
+            borderWidth: 2,
+            pointRadius: 0
+          }]
+        },
+        options: baseOptions
+      });
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('tableBody');
+      tbody.innerHTML = '';
+
+      sampledData.forEach((row, idx) => {
+        const tr = document.createElement('tr');
+        tr.className = idx % 2 === 0 ? 'bg-slate-900/30' : 'bg-slate-950/30';
+        tr.innerHTML = `
+          <td class="p-2.5 font-semibold text-sky-400">${row.t.toFixed(5)}</td>
+          <td class="p-2.5 text-amber-300">${row.thetaDeg.toFixed(2)}°</td>
+          <td class="p-2.5 text-slate-400">${row.thetaRad.toFixed(4)}</td>
+          <td class="p-2.5 text-emerald-400">${row.omega.toFixed(4)}</td>
+          <td class="p-2.5 text-rose-400">${row.alpha.toFixed(4)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+      drawCanvasFrame();
+    }
+
+    function drawCanvasFrame() {
+      if (!simData || simData.length === 0) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const width = rect.width;
+      const height = rect.height;
+
+      ctx.clearRect(0, 0, width, height);
+
+      const currentStep = simData[currentAnimIndex] || simData[0];
+      const thetaRad = currentStep.thetaRad;
+      const thetaDeg = currentStep.thetaDeg;
+
+      const pivotX = width * 0.25;
+      const pivotY = height * 0.75;
+      const armLength = Math.min(width, height) * 0.55;
+
+      // Table Surface Base
+      ctx.beginPath();
+      ctx.moveTo(pivotX - 40, pivotY);
+      ctx.lineTo(pivotX + armLength + 40, pivotY);
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      // Angle Arc
+      if (thetaRad > 0.01) {
+        ctx.beginPath();
+        ctx.arc(pivotX, pivotY, 50, 0, -thetaRad, true);
+        ctx.strokeStyle = 'rgba(245, 158, 11, 0.7)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([3, 3]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // End Position of Cover
+      const endX = pivotX + armLength * Math.cos(thetaRad);
+      const endY = pivotY - armLength * Math.sin(thetaRad);
+
+      // Book Cover Line
+      ctx.beginPath();
+      ctx.moveTo(pivotX, pivotY);
+      ctx.lineTo(endX, endY);
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 6;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      // Center of Mass (CoM)
+      const comX = pivotX + (armLength / 2) * Math.cos(thetaRad);
+      const comY = pivotY - (armLength / 2) * Math.sin(thetaRad);
+
+      ctx.beginPath();
+      ctx.arc(comX, comY, 4, 0, 2 * Math.PI);
+      ctx.fillStyle = '#f43f5e';
+      ctx.fill();
+
+      // Gravity Arrow
+      ctx.beginPath();
+      ctx.moveTo(comX, comY);
+      ctx.lineTo(comX, comY + 35);
+      ctx.strokeStyle = '#f43f5e';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Arrow Head
+      ctx.beginPath();
+      ctx.moveTo(comX - 4, comY + 29);
+      ctx.lineTo(comX, comY + 35);
+      ctx.lineTo(comX + 4, comY + 29);
+      ctx.fillStyle = '#f43f5e';
+      ctx.fill();
+
+      // Hinge Pivot Node
+      ctx.beginPath();
+      ctx.arc(pivotX, pivotY, 6, 0, 2 * Math.PI);
+      ctx.fillStyle = '#0f172a';
+      ctx.fill();
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+    }
+
+    function startAnimation() {
+      if (isPlaying) return;
+      isPlaying = true;
+      document.getElementById('iconPlay').className = 'fa-solid fa-pause';
+      document.getElementById('textPlay').innerText = 'Pause';
+
+      let lastTime = performance.now();
+
+      function stepAnim(now) {
+        if (!isPlaying) return;
+
+        const delta = (now - lastTime) / 1000.0;
+        lastTime = now;
+
+        const frameInc = Math.max(1, Math.round(animSpeed * (delta / 0.0001)));
+        currentAnimIndex += frameInc;
+
+        if (currentAnimIndex >= simData.length - 1) {
+          currentAnimIndex = simData.length - 1;
+          isPlaying = false;
+          document.getElementById('iconPlay').className = 'fa-solid fa-play';
+          document.getElementById('textPlay').innerText = 'Play';
+        }
+
+        updateScrubberUI();
+        drawCanvasFrame();
+
+        if (isPlaying) {
+          animFrameId = requestAnimationFrame(stepAnim);
+        }
+      }
+
+      animFrameId = requestAnimationFrame(stepAnim);
+    }
+
+    function pauseAnimation() {
+      isPlaying = false;
+      if (animFrameId) cancelAnimationFrame(animFrameId);
+      document.getElementById('iconPlay').className = 'fa-solid fa-play';
+      document.getElementById('textPlay').innerText = 'Play';
+    }
+
+    function updateScrubberUI() {
+      if (!simData || simData.length === 0) return;
+      const pct = (currentAnimIndex / (simData.length - 1)) * 100;
+      document.getElementById('animScrubber').value = pct;
+
+      const currentStep = simData[currentAnimIndex] || simData[0];
+      document.getElementById('animTimeLabel').innerText = `${currentStep.t.toFixed(4)}s`;
+      document.getElementById('animAngleLabel').innerText = `${currentStep.thetaDeg.toFixed(1)}°`;
+    }
+
+    function downloadCSV() {
+      if (!simData || simData.length === 0) return;
+
+      let csv = "Time_s,Angle_deg,Angle_rad,Angular_Velocity_rad_s,Angular_Acceleration_rad_s2\n";
+      simData.forEach(r => {
+        csv += `${r.t.toFixed(6)},${r.thetaDeg.toFixed(4)},${r.thetaRad.toFixed(6)},${r.omega.toFixed(6)},${r.alpha.toFixed(6)}\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "IYPT2027_Falling_Book_Cover_Data.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      
+      const sliderL = document.getElementById('sliderL');
+      const inputL = document.getElementById('inputL');
+      const valL = document.getElementById('valL');
+
+      const sliderTheta0 = document.getElementById('sliderTheta0');
+      const inputTheta0 = document.getElementById('inputTheta0');
+      const valTheta0 = document.getElementById('valTheta0');
+
+      sliderL.addEventListener('input', (e) => {
+        inputL.value = e.target.value;
+        valL.innerText = `${parseFloat(e.target.value).toFixed(4)} m`;
+        runSimulation();
+      });
+      inputL.addEventListener('change', (e) => {
+        sliderL.value = e.target.value;
+        valL.innerText = `${parseFloat(e.target.value).toFixed(4)} m`;
+        runSimulation();
+      });
+
+      sliderTheta0.addEventListener('input', (e) => {
+        inputTheta0.value = e.target.value;
+        valTheta0.innerText = `${parseFloat(e.target.value).toFixed(1)}°`;
+        runSimulation();
+      });
+      inputTheta0.addEventListener('change', (e) => {
+        sliderTheta0.value = e.target.value;
+        valTheta0.innerText = `${parseFloat(e.target.value).toFixed(1)}°`;
+        runSimulation();
+      });
+
+      document.getElementById('btnRun').addEventListener('click', runSimulation);
+
+      document.getElementById('btnReset').addEventListener('click', () => {
+        inputL.value = DEFAULTS.L;
+        sliderL.value = DEFAULTS.L;
+        valL.innerText = `${DEFAULTS.L} m`;
+
+        inputTheta0.value = DEFAULTS.theta0;
+        sliderTheta0.value = DEFAULTS.theta0;
+        valTheta0.innerText = `${DEFAULTS.theta0}°`;
+
+        document.getElementById('inputOmega0').value = DEFAULTS.omega0;
+        document.getElementById('inputG').value = DEFAULTS.g;
+        document.getElementById('inputDt').value = DEFAULTS.dt;
+
+        runSimulation();
+      });
+
+      document.getElementById('btnPlayPause').addEventListener('click', () => {
+        if (isPlaying) pauseAnimation();
+        else startAnimation();
+      });
+
+      document.getElementById('btnRestart').addEventListener('click', () => {
+        pauseAnimation();
+        currentAnimIndex = 0;
+        updateScrubberUI();
+        drawCanvasFrame();
+      });
+
+      document.getElementById('animScrubber').addEventListener('input', (e) => {
+        pauseAnimation();
+        const pct = parseFloat(e.target.value);
+        currentAnimIndex = Math.round((pct / 100) * (simData.length - 1));
+        updateScrubberUI();
+        drawCanvasFrame();
+      });
+
+      document.getElementById('sliderSpeed').addEventListener('input', (e) => {
+        animSpeed = parseFloat(e.target.value);
+        document.getElementById('labelSpeed').innerText = `${animSpeed.toFixed(1)}x`;
+      });
+
+      document.getElementById('btnDownloadCSV').addEventListener('click', downloadCSV);
+      document.getElementById('btnHeaderExport').addEventListener('click', downloadCSV);
+
+      window.addEventListener('resize', resizeCanvas);
+
+      resizeCanvas();
+      runSimulation();
+    });
+  </script>
+</body>
+</html>
